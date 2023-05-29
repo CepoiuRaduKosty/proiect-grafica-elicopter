@@ -143,7 +143,7 @@ void CALLBACK rotright(void)
 	if (testangle < 0)	testangle += 360;
 }
 
-GLfloat position[] = { 1.0, 150.0, -10.0, 1.0 };
+GLfloat position[] = { 1.0, 150.0, -30.0, 1.0 };
 void myInit()
 {
 	//se fac setarile pentru iluminare 
@@ -316,16 +316,19 @@ void CALLBACK display()
 	glTranslatef(0, -50, 0);
 	draw_heli();
 	glPopMatrix();
-	
-
 	//umbra
 	glPushMatrix();
 		glMultMatrixf((GLfloat*)matriceUmbrire); // se inmulteste matricea curenta cu matricea de umbrire
-		glColor3f(0, 0, 0);
+		glColor4f(0, 0, 0, 0.7);
 		esteUmbra = true;
 		glDisable(GL_LIGHTING);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glDepthMask(GL_FALSE);
 		draw_heli();
 		esteUmbra = false;
+		glDepthMask(GL_TRUE);
+		glDisable(GL_BLEND);
 		glEnable(GL_LIGHTING);
 	glPopMatrix();
 
