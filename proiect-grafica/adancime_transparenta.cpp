@@ -40,14 +40,16 @@ const float back_elice_hcylA = back_rcyl * 2;
 const float back_elice_rcylB = back_elice_rcylA * 0.7;
 const float back_elice_hcylB = back_elice_hcylA;
 const float back_elice_err = back_hcyl * 0.1;
-const float back_elice_rsphere = back_elice_rcylB * 0.4;
+const float back_elice_rsphere = back_elice_rcylB * 0.2;
 
-const float back_elice_beamL = back_elice_rcylB * 0.7;
+const float back_elice_beamL = back_elice_rcylB * 0.9;
 const float back_elice_beaml = back_elice_rsphere;
 const float back_elice_beamh = back_elice_beaml * 0.2;
 
 const float front_hbot = front_hconA * 0.5;
 
+float angleEliceMare = 0;
+float angleEliceMica = 0;
 float testangle = 0;
 void CALLBACK rotleft(void)
 {
