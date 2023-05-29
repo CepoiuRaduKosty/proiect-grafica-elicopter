@@ -48,15 +48,95 @@ const float back_elice_beamh = back_elice_beaml * 0.2;
 
 const float front_hbot = front_hconA * 0.5;
 
-float angleEliceMare = 0;
-float angleEliceMica = 0;
+int angleElice = 0;
 float testangle = 0;
+
+GLfloat punctePlanIarba[][3] = {
+	{ -150.0f, -60.0f, -150.0f },
+	{ -150.0f, -60.0f, 150.0f },
+	{ 150.0f, -60.0f, 150.0f } ,
+	{ 150.0f, -60.0f, -150.0f }
+};
+float coeficientiPlanIarba[4];
+float matriceUmbrire[4][4];
+const int x = 0, y = 1, z = 2, w = 3; // used only for indexing
+const int A = 0, B = 1, C = 2, D = 3; // used only for indexing
+
+void computePlaneCoefficientsFromPoints(float points[3][3]) {
+	// calculeaza 2 vectori din 3 puncte
+	float v1[3]{ points[0][x] - points[1][x], points[0][y] - points[1][y], points[0][z] - points[1][z] };
+	float v2[3]{ points[1][x] - points[2][x], points[1][y] - points[2][y], points[1][z] - points[2][z] };
+
+	// produsul vectorial al celor 2 vectori => al 3lea vector cu componentele A,B,C chiar coef din ec. planului
+	coeficientiPlanIarba[A] = v1[y] * v2[z] - v1[z] * v2[y];
+	coeficientiPlanIarba[B] = v1[z] * v2[x] - v1[x] * v2[z];
+	coeficientiPlanIarba[C] = v1[x] * v2[y] - v1[y] * v2[x];
+
+	// determinam D - ecuatia planului in punctul random ales trebuie sa fie zero
+	int randomPoint = 1; // poate fi orice punct de pe planul ierbii, asa ca alegem unul din cele 3 folosite pentru calcule
+	coeficientiPlanIarba[D] =
+		-(coeficientiPlanIarba[A] * points[randomPoint][x] +
+			coeficientiPlanIarba[B] * points[randomPoint][y] +
+			coeficientiPlanIarba[C] * points[randomPoint][z]);
+}
+
+void computeShadowMatrix(float points[3][3], float lightSourcePosition[4]) {
+	// determina coef planului	
+	computePlaneCoefficientsFromPoints(points);
+
+	// temp = AxL + ByL + CzL + Dw
+	float temp =
+		coeficientiPlanIarba[A] * lightSourcePosition[x] +
+		coeficientiPlanIarba[B] * lightSourcePosition[y] +
+		coeficientiPlanIarba[C] * lightSourcePosition[z] +
+		coeficientiPlanIarba[D] * lightSourcePosition[w];
+
+	//prima coloana
+	matriceUmbrire[0][0] = temp - coeficientiPlanIarba[A] * lightSourcePosition[x];
+	matriceUmbrire[1][0] = 0.0f - coeficientiPlanIarba[B] * lightSourcePosition[x];
+	matriceUmbrire[2][0] = 0.0f - coeficientiPlanIarba[C] * lightSourcePosition[x];
+	matriceUmbrire[3][0] = 0.0f - coeficientiPlanIarba[D] * lightSourcePosition[x];
+	//a 2a coloana
+	matriceUmbrire[0][1] = 0.0f - coeficientiPlanIarba[A] * lightSourcePosition[y];
+	matriceUmbrire[1][1] = temp - coeficientiPlanIarba[B] * lightSourcePosition[y];
+	matriceUmbrire[2][1] = 0.0f - coeficientiPlanIarba[C] * lightSourcePosition[y];
+	matriceUmbrire[3][1] = 0.0f - coeficientiPlanIarba[D] * lightSourcePosition[y];
+	//a 3a coloana
+	matriceUmbrire[0][2] = 0.0f - coeficientiPlanIarba[A] * lightSourcePosition[z];
+	matriceUmbrire[1][2] = 0.0f - coeficientiPlanIarba[B] * lightSourcePosition[z];
+	matriceUmbrire[2][2] = temp - coeficientiPlanIarba[C] * lightSourcePosition[z];
+	matriceUmbrire[3][2] = 0.0f - coeficientiPlanIarba[D] * lightSourcePosition[z];
+	//a 4a coloana
+	matriceUmbrire[0][3] = 0.0f - coeficientiPlanIarba[A] * lightSourcePosition[w];
+	matriceUmbrire[1][3] = 0.0f - coeficientiPlanIarba[B] * lightSourcePosition[w];
+	matriceUmbrire[2][3] = 0.0f - coeficientiPlanIarba[C] * lightSourcePosition[w];
+	matriceUmbrire[3][3] = temp - coeficientiPlanIarba[D] * lightSourcePosition[w];
+}
+
+void desenareIarba() {
+	glPushMatrix();
+	glColor3f(0, 0.3, 0);
+	glTranslatef(0, -0.1, 0);
+	glBegin(GL_QUADS);
+	{
+		glNormal3f(0, 1, 0);
+		for (int i = 0; i < 4; i++) {
+			glVertex3fv(punctePlanIarba[i]);
+		}
+	}
+	glEnd();
+	glPopMatrix();
+}
+
+
+
 void CALLBACK rotleft(void)
 {
 	testangle += 10;
 	if (testangle > 360)	testangle -= 360;
 }
 
+GLfloat position[] = { 1.0, 20.0, -10.0, 1.0 };
 void myInit()
 {
 	//se fac setarile pentru iluminare 
@@ -71,11 +151,12 @@ void myInit()
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 
-	GLfloat position[] = { 1.0, 20.0, -10.0, 1.0 };
 	glLightfv(GL_LIGHT0, GL_POSITION, position);
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_COLOR_MATERIAL);
+
+	glClearColor(0.25, 0.7, 1, 0);
 
 	gluQuadricNormals(q, GLU_SMOOTH);
 	gluQuadricTexture(q, GL_FALSE);
@@ -107,11 +188,12 @@ void draw_heli_mid_elice() {
 	glTranslatef(0, mid_lcube / 2 + mid_rsphere - mid_sphere_err, 0);
 	auxSolidSphere(mid_rsphere);
 	for (int i = 0; i < 4; i++) {
-		glRotatef(90 * i, 0, 1, 0);
+		glRotatef(90 * i + angleElice, 0, 1, 0);
 		glPushMatrix();
 			glTranslatef(0, 0, mid_elice_L / 2);
 			auxSolidBox(mid_elice_l, mid_elice_h, mid_elice_L);
-		glPopMatrix();
+		glPopMatrix(); 
+		glRotatef(-angleElice, 0, 1, 0);
 	}
 }
 
@@ -170,11 +252,12 @@ void draw_heli_back_elice() {
 		auxSolidSphere(back_elice_rsphere);
 		glRotatef(-90, 0, 1, 0);
 		for (int i = 0; i < 4; i++) {
-			glRotatef(90 * i, 1, 0, 0);
+			glRotatef(90 * i + angleElice, 1, 0, 0);
 			glPushMatrix();
 				glTranslatef(0,0, -back_elice_beamL/2);
 				auxSolidBox(back_elice_beamh, back_elice_beaml, back_elice_beamL);
 			glPopMatrix();
+			glRotatef(-angleElice, 1, 0, 0);
 		}
 	glPopMatrix();
 }
@@ -204,12 +287,23 @@ void CALLBACK display()
 {	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
+	computeShadowMatrix(punctePlanIarba, position);
 	//CAMERA SETTIGNS
-	glTranslatef(0, 0, -100);
+	glTranslatef(0, 30, -100);
 	glRotatef(testangle, 0, 1, 0);
 	////////////////////////////
+	glPushMatrix();
+	glTranslatef(0, -20, 0);
 	draw_heli();
+	glPopMatrix();
+	desenareIarba();
 	glFlush();
+}
+
+void CALLBACK idlefunc() {
+	angleElice = (angleElice + 50) % 360;
+	display();
+	Sleep(60);
 }
 
 void CALLBACK myReshape(GLsizei w, GLsizei h)
@@ -230,6 +324,7 @@ int main(int argc, char** argv)
 	myInit();
 	auxReshapeFunc(myReshape);
 	auxKeyFunc(AUX_LEFT, rotleft);
+	auxIdleFunc(idlefunc);
 	auxMainLoop(display);
 	return 0;
 }
