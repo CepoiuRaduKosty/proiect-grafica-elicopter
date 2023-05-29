@@ -48,14 +48,15 @@ const float back_elice_beamh = back_elice_beaml * 0.2;
 
 const float front_hbot = front_hconA * 0.5;
 
-int angleElice = 0;
+int angleElice = 0, zforward = 0;
 float testangle = 0;
+bool esteUmbra = false;
 
 GLfloat punctePlanIarba[][3] = {
-	{ -150.0f, -60.0f, -150.0f },
-	{ -150.0f, -60.0f, 150.0f },
-	{ 150.0f, -60.0f, 150.0f } ,
-	{ 150.0f, -60.0f, -150.0f }
+	{ -100.0f, -100.0f, -100.0f },
+	{ -100.0f, -100.0f, 100.0f },
+	{ 100.0f, -100.0f, 100.0f } ,
+	{ 100.0f, -100.0f, -100.0f }
 };
 float coeficientiPlanIarba[4];
 float matriceUmbrire[4][4];
@@ -136,7 +137,13 @@ void CALLBACK rotleft(void)
 	if (testangle > 360)	testangle -= 360;
 }
 
-GLfloat position[] = { 1.0, 20.0, -10.0, 1.0 };
+void CALLBACK rotright(void)
+{
+	testangle -= 10;
+	if (testangle < 0)	testangle += 360;
+}
+
+GLfloat position[] = { 1.0, 150.0, -10.0, 1.0 };
 void myInit()
 {
 	//se fac setarile pentru iluminare 
@@ -199,6 +206,7 @@ void draw_heli_mid_elice() {
 
 void draw_heli_mid() {
 	glRotatef(-90, 0, 1, 0);
+	if (!esteUmbra) glColor3f(0, 0.3, 0);
 
 	glPushMatrix();
 		glTranslatef(0, 0, -mid_Lcyl / 2);
@@ -207,6 +215,7 @@ void draw_heli_mid() {
 
 	glPushMatrix();
 		glTranslatef(0, mid_rcyl, 0);
+		if (!esteUmbra) glColor3f(0, 0, 0);
 		draw_heli_mid_elice();
 	glPopMatrix();
 
@@ -223,19 +232,23 @@ void draw_heli_mid() {
 		glRotatef(90, 0, 1, 0);
 		draw_heli_mid_feet();
 	glPopMatrix();
+	if (!esteUmbra) glColor3f(0, 0.3, 0);
 }
 
 void draw_heli_front() {
+	if (!esteUmbra) glColor3f(0, 0.3, 0);
 	glPushMatrix();
 		gluCylinder(q, front_RconA, front_rconA, front_hconA, cylSlices, cylStacks);
 		glTranslatef(0, 0, front_hconA);
 		gluCylinder(q, front_RconB, front_rconB, front_hconB, cylSlices, cylStacks);
 		glTranslatef(0, 0, front_hconB);
+		if (!esteUmbra) glColor3f(0, 0, 0);
 		auxSolidSphere(front_rconB);
 	glPopMatrix();
 }
 
 void draw_heli_back_elice() {
+	if (!esteUmbra) glColor3f(0, 0.3, 0);
 	glPushMatrix();
 		glTranslatef(0, 0, back_elice_rcylA);
 		glRotatef(90, 0, 1, 0);
@@ -249,6 +262,7 @@ void draw_heli_back_elice() {
 		glTranslatef(0, 0, back_elice_hcylA);
 		gluDisk(q, back_elice_rcylB, back_elice_rcylA, cylSlices, cylStacks);
 		glTranslatef(0, 0, -back_elice_hcylA / 2);
+		if(!esteUmbra) glColor3f(0, 0, 0);
 		auxSolidSphere(back_elice_rsphere);
 		glRotatef(-90, 0, 1, 0);
 		for (int i = 0; i < 4; i++) {
@@ -259,10 +273,12 @@ void draw_heli_back_elice() {
 			glPopMatrix();
 			glRotatef(-angleElice, 1, 0, 0);
 		}
+		if (!esteUmbra) glColor3f(0, 0.3, 0);
 	glPopMatrix();
 }
 
 void draw_heli_back() {
+	if (!esteUmbra) glColor3f(0, 0.3, 0);
 	glPushMatrix();
 		gluCylinder(q, back_Rcon, back_rcon, back_hcon, cylSlices, cylStacks);
 		glTranslatef(0, 0, back_hcon);
@@ -289,14 +305,30 @@ void CALLBACK display()
 	glLoadIdentity();
 	computeShadowMatrix(punctePlanIarba, position);
 	//CAMERA SETTIGNS
-	glTranslatef(0, 30, -100);
-	glRotatef(testangle, 0, 1, 0);
+	glTranslatef(0, 60, -140);
+	glRotatef(20, 1, 0, 0);
 	////////////////////////////
+	desenareIarba();
+
+	glRotatef(testangle, 0, 1, 0);
+	glTranslatef(0, 0, 20);
 	glPushMatrix();
-	glTranslatef(0, -20, 0);
+	glTranslatef(0, -50, 0);
 	draw_heli();
 	glPopMatrix();
-	desenareIarba();
+	
+
+	//umbra
+	glPushMatrix();
+		glMultMatrixf((GLfloat*)matriceUmbrire); // se inmulteste matricea curenta cu matricea de umbrire
+		glColor3f(0, 0, 0);
+		esteUmbra = true;
+		glDisable(GL_LIGHTING);
+		draw_heli();
+		esteUmbra = false;
+		glEnable(GL_LIGHTING);
+	glPopMatrix();
+
 	glFlush();
 }
 
@@ -324,6 +356,7 @@ int main(int argc, char** argv)
 	myInit();
 	auxReshapeFunc(myReshape);
 	auxKeyFunc(AUX_LEFT, rotleft);
+	auxKeyFunc(AUX_RIGHT, rotright);
 	auxIdleFunc(idlefunc);
 	auxMainLoop(display);
 	return 0;
