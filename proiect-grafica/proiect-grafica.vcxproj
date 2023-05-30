@@ -43,6 +43,9 @@
   <ItemGroup>
     <ClCompile Include="adancime_transparenta.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="camo.bmp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>

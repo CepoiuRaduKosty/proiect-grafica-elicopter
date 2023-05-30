@@ -53,6 +53,7 @@ float testangle = 0;
 bool esteUmbra = false;
 static float lightSourcePosition[4] = { -60, 50, -40, 1 };
 bool farcam = false;
+int zheli = 0;
 
 GLfloat punctePlanIarba[][3] = {
 	{ -200.0f, -20.0f, -200.0f },
@@ -89,6 +90,15 @@ void CALLBACK mutaSursaStanga() {
 	if (lightSourcePosition[x] > -100) {
 		lightSourcePosition[x] -= 5;
 	}
+}
+
+void CALLBACK goup() {
+	zheli++;
+}
+
+void CALLBACK godown() {
+	zheli--;
+	if (zheli < -20) zheli = -20;
 }
 
 void computePlaneCoefficientsFromPoints(float points[3][3]) {
@@ -144,7 +154,7 @@ void computeShadowMatrix(float points[3][3], float lightSourcePosition[4]) {
 
 void desenareIarba() {
 	glPushMatrix();
-	glColor3f(0, 0.3, 0);
+	glColor3f(0.8, 0.57, 0.3);
 	glTranslatef(0, -0.1, 0);
 	glBegin(GL_QUADS);
 	{
@@ -159,25 +169,51 @@ void desenareIarba() {
 
 void CALLBACK rotleft(void)
 {
-	testangle += 10;
+	testangle += 4;
 	if (testangle > 360)	testangle -= 360;
 }
 
 void CALLBACK rotright(void)
 {
-	testangle -= 10;
+	testangle -= 4;
 	if (testangle < 0)	testangle += 360;
+}
+
+GLuint textureId1;
+
+GLuint incarcaTextura(const char* s)
+{
+	GLuint textureId = 0;
+	AUX_RGBImageRec* pImagineTextura = auxDIBImageLoad(s);
+
+	if (pImagineTextura != NULL)
+	{
+		glGenTextures(1, &textureId);
+		glBindTexture(GL_TEXTURE_2D, textureId);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, 3, pImagineTextura->sizeX, pImagineTextura->sizeY,
+			0, GL_RGB, GL_UNSIGNED_BYTE, pImagineTextura->data);
+	}
+	if (pImagineTextura)
+	{
+		if (pImagineTextura->data) {
+			free(pImagineTextura->data);
+		}
+		free(pImagineTextura);
+	}
+	return textureId;
 }
 
 void myInit()
 {
-	textureId1 = incarcaTextura("covor.bmp");
+	
+	textureId1 = incarcaTextura("camo.bmp");
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
 	GLfloat sGenParams[] = { 1.0, 1.0, 1.0, 0.0 };
 	glTexGenfv(GL_S, GL_OBJECT_PLANE, sGenParams);
-	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, textureId1);
 
 	float lightAmbient[] = { 0.4f, 0.4f, 0.4f, 1.0f };
@@ -195,6 +231,7 @@ void myInit()
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 	glEnable(GL_NORMALIZE);
+	//glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
 
 	glEnable(GL_DEPTH_TEST);
@@ -245,7 +282,7 @@ void draw_heli_mid_elice() {
 
 void draw_heli_mid() {
 	glRotatef(-90, 0, 1, 0);
-	if (!esteUmbra) glColor3f(0, 0.3, 0);
+	if (!esteUmbra) glColor3f(1, 1, 1);
 
 	glPushMatrix();
 		glTranslatef(0, 0, -mid_Lcyl / 2);
@@ -271,11 +308,11 @@ void draw_heli_mid() {
 		glRotatef(90, 0, 1, 0);
 		draw_heli_mid_feet();
 	glPopMatrix();
-	if (!esteUmbra) glColor3f(0, 0.3, 0);
+	if (!esteUmbra) glColor3f(1, 1, 1);
 }
 
 void draw_heli_front() {
-	if (!esteUmbra) glColor3f(0, 0.3, 0);
+	if (!esteUmbra) glColor3f(1, 1, 1);
 	glPushMatrix();
 		gluCylinder(q, front_RconA, front_rconA, front_hconA, cylSlices, cylStacks);
 		glTranslatef(0, 0, front_hconA);
@@ -287,7 +324,7 @@ void draw_heli_front() {
 }
 
 void draw_heli_back_elice() {
-	if (!esteUmbra) glColor3f(0, 0.3, 0);
+	if (!esteUmbra) glColor3f(1, 1, 1);
 	glPushMatrix();
 		glTranslatef(0, 0, back_elice_rcylA);
 		glRotatef(90, 0, 1, 0);
@@ -312,12 +349,12 @@ void draw_heli_back_elice() {
 			glPopMatrix();
 			glRotatef(-angleElice, 1, 0, 0);
 		}
-		if (!esteUmbra) glColor3f(0, 0.3, 0);
+		if (!esteUmbra) glColor3f(1, 1, 1);
 	glPopMatrix();
 }
 
 void draw_heli_back() {
-	if (!esteUmbra) glColor3f(0, 0.3, 0);
+	if (!esteUmbra) glColor3f(1, 1, 1);
 	glPushMatrix();
 		gluCylinder(q, back_Rcon, back_rcon, back_hcon, cylSlices, cylStacks);
 		glTranslatef(0, 0, back_hcon);
@@ -339,20 +376,19 @@ void draw_heli() {
 }
 
 void draw_umbra() {
+	glDisable(GL_LIGHTING);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glDepthMask(GL_FALSE);
+	glColor4f(0, 0, 0, 0.7);
 	glPushMatrix();
-		glMultMatrixf((GLfloat*)matriceUmbrire); // se inmulteste matricea curenta cu matricea de umbrire
-		glColor4f(0, 0, 0, 0.7);
 		esteUmbra = true;
-		glDisable(GL_LIGHTING);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glDepthMask(GL_FALSE);
 		draw_heli();
 		esteUmbra = false;
-		glDepthMask(GL_TRUE);
-		glDisable(GL_BLEND);
-		glEnable(GL_LIGHTING);
 	glPopMatrix();
+	glDepthMask(GL_TRUE);
+	glDisable(GL_BLEND);
+	glEnable(GL_LIGHTING);
 }
 
 void deseneazaLumina()
@@ -380,57 +416,43 @@ void setcamera() {
 	glRotatef(15, 1, 0, 0);
 }
 
-GLuint textureId1;
 
-GLuint incarcaTextura(const char* s)
-{
-	GLuint textureId = 0;
-	AUX_RGBImageRec* pImagineTextura = auxDIBImageLoad(s);
-
-	if (pImagineTextura != NULL)
-	{
-		glGenTextures(1, &textureId);
-		glBindTexture(GL_TEXTURE_2D, textureId);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexImage2D(GL_TEXTURE_2D, 0, 3, pImagineTextura->sizeX, pImagineTextura->sizeY,
-			0, GL_RGB, GL_UNSIGNED_BYTE, pImagineTextura->data);
-	}
-	if (pImagineTextura)
-	{
-		if (pImagineTextura->data) {
-			free(pImagineTextura->data);
-		}
-		free(pImagineTextura);
-	}
-	return textureId;
-}
 
 
 void CALLBACK display()
 {	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
-	computeShadowMatrix(punctePlanIarba, lightSourcePosition);
 	setcamera();
+	computeShadowMatrix(punctePlanIarba, lightSourcePosition);
 	desenareIarba();
 
+	glLightfv(GL_LIGHT0, GL_POSITION, lightSourcePosition);
 	glPushMatrix();
 		glRotatef(testangle, 0, 1, 0);
-		glTranslatef(0, 0, 10);
+		glTranslatef(0, zheli, 30);
+		glEnable(GL_TEXTURE_2D);
 		draw_heli();
+		glDisable(GL_TEXTURE_2D);
+	glPopMatrix();
+
+	glPushMatrix();
+		glMultMatrixf((GLfloat*)matriceUmbrire);
+		glRotatef(testangle, 0, 1, 0);
+		glTranslatef(0, zheli, 30);
 		draw_umbra();
 	glPopMatrix();
 
 	deseneazaLumina();
+	
 
 	glFlush();
 }
 
 void CALLBACK idlefunc() {
-	angleElice = (angleElice + 50) % 360;
+	angleElice = (angleElice + 10) % 360;
 	display();
-	Sleep(60);
+	Sleep(1);
 }
 
 void CALLBACK myReshape(GLsizei w, GLsizei h)
@@ -452,6 +474,8 @@ int main(int argc, char** argv)
 	auxReshapeFunc(myReshape);
 	auxKeyFunc(AUX_LEFT, rotleft);
 	auxKeyFunc(AUX_RIGHT, rotright);
+	auxKeyFunc(AUX_UP, goup);
+	auxKeyFunc(AUX_DOWN, godown);
 	auxKeyFunc(AUX_w, mutaSursaSpate);
 	auxKeyFunc(AUX_s, mutaSursaFata);
 	auxKeyFunc(AUX_d, mutaSursaDreapta);
